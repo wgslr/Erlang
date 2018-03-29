@@ -42,3 +42,6 @@ foldl(_, Acc0, []) -> Acc0;
 foldl(Fun, Acc0, [H|T]) ->
     foldl(Fun, Fun(H, Acc0), T).
 
+
+% sum rem 3
+% lists:filter(fun (A) -> lists:sum(lists:map(fun(X) -> list_to_integer([X]) end, erlang:integer_to_list(A))) rem 3 == 0 end, [1, 2, 3, 4, 5, 6, 111, 123]).

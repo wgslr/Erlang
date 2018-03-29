@@ -5,23 +5,25 @@
 
 -type station_name() :: string().
 -type coord() :: {float(), float()}.
--type kind() :: pm10 | pm25.
+-type kind() :: string().
+-type timestamp() :: calendar:datetime().
+-type datapoint() :: {kind(), calendar:datetime(), float()}.
 
 
--record(datapoint,{
-    datetime :: calendar:datetime(),
-    value :: double(),
-    kind :: kind()
-}).
+%%-record(datapoint,{
+%%    datetime :: calendar:datetime(),
+%%    value :: double(),
+%%    kind :: kind()
+%%}).
 
 -record(station, {
     name :: station_name(),
     coord :: coord(),
-    data :: [#datapoint{}]
+    data :: [datapoint()]
 }).
 
 -record(monitor, {
-    name_to_senor = #{} :: #{station_name() => #station{}},
+    name_to_station = #{} :: #{station_name() => #station{}},
     coord_to_name = #{} :: #{coord() => station_name()}
 }).
 

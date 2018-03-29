@@ -21,12 +21,12 @@ createMonitor() ->
 
 -spec addStation(Name :: station_name(), Coord :: coord(), #monitor{}) -> #monitor{}.
 addStation(Name, Coord, M) ->
-    #monitor{coord_to_name = CtN, name_to_senor = NtS} = Monitor,
+    #monitor{coord_to_name = CtN, name_to_station = NtS} = M,
     case {findStation({name, Name}, M), findStation({coord,Coord}, M)}  of
         {{error, not_found}, {error, not_found}} ->
             M#monitor{
                 coord_to_name = CtN#{Coord => Name},
-                name_to_senor = CtN#{Name => #station{
+                name_to_station = CtN#{Name => #station{
                     coord = Coord, name = Name, data = []
                 }}
             };
@@ -34,9 +34,29 @@ addStation(Name, Coord, M) ->
     end.
 
 
+-spec addValue(id(), timestamp(), kind(), double(), #monitor{}) ->
+    #monitor{}.
+addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
+    #station{data = Data} = S = findStation(CoordOrName, M),
+    case exists(MeasureKind, Datetime, Data)of
+        true -> {error, exists};
+        false -> M#monitor{
+            name_to_station = S#station{
+                data = [{MeasureKind, Datetime, Value} | Data]
+            }}
+    end.
 
-addValue(CoordOrName, Date, MeasureKind, Valye, Monitor) ->
-    erlang:error(not_implemented).
+
+% Checks if value exists with the same Kind and Datetime
+-spec exists(kind(), timestamp(), [datapoint()]) -> boolean().
+exists(Kind, Datetime, Dataset) ->
+    lists:any(fun({Kind2, Datetime2, _}) ->
+        case {Kind2, Datetime2} of
+            {Kind, Datetime} -> true;
+            _ -> false
+        end
+    end, Dataset).
+
 
 %addValue(CoordOrName, Date, MeasureKind, Monitor) ->
 removeValue(_Arg0, _Arg1, _Arg2, _Arg3) ->
@@ -58,10 +78,11 @@ getDailyMean(_Arg0, _Arg1, _Arg2) ->
 
 
 -spec findStation(id(), #monitor{}) -> #station{} | {error, not_found}.
-findStation({name, Name}, #monitor{name_to_senor = NtS}) ->
+findStation({name, Name}, #monitor{name_to_station = NtS}) ->
     maps:get(Name, NtS, {error, not_found});
-findStation({coord, Coord}, #monitor{coord_to_name = CtN, name_to_senor = NtS}) ->
+findStation({coord, Coord}, #monitor{coord_to_name = CtN, name_to_station = NtS}) ->
     case maps:get(Coord, CtN, undefined) of
         undefined -> {error, not_found};
         Name -> maps:get(Name, NtS)
     end.
+

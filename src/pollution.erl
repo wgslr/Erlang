@@ -34,8 +34,8 @@ addStation(Name, Coord, M) ->
     end.
 
 
--spec addValue(id(), timestamp(), kind(), double(), #monitor{}) ->
-    #monitor{}.
+-spec addValue(id(), timestamp(), kind(), float(), #monitor{}) ->
+    #monitor{} | no_return().
 addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
     #station{data = Data} = S = findStation(CoordOrName, M),
     case exists(MeasureKind, Datetime, Data)of
@@ -59,8 +59,12 @@ exists(Kind, Datetime, Dataset) ->
 
 
 %addValue(CoordOrName, Date, MeasureKind, Monitor) ->
-removeValue(_Arg0, _Arg1, _Arg2, _Arg3) ->
-    erlang:error(not_implemented).
+-spec removeValue(id(), timestamp(), kind(), monitor()) -> monitor().
+removeValue(CoordOrName, Datetime, Kind, M) ->
+    {ok, S} = findStation(CoordOrName),
+    Data = S#station.data,
+    Data2 = lists:filter(fun({Kind2, Datetime2,_} ->
+    )
 
 % typ, data, stacja
 getOneValue(_Arg0, _Arg1, _Arg2, _Arg3) ->
@@ -77,12 +81,17 @@ getDailyMean(_Arg0, _Arg1, _Arg2) ->
     erlang:error(not_implemented).
 
 
--spec findStation(id(), #monitor{}) -> #station{} | {error, not_found}.
+-spec findStation(id(), #monitor{}) -> {ok, #station{}} | {error, not_found}.
 findStation({name, Name}, #monitor{name_to_station = NtS}) ->
-    maps:get(Name, NtS, {error, not_found});
+    case maps:get(Name, NtS, undefined) of
+        undefined -> {error, not_found};
+        #station{} = S -> {ok, S}
+    end
 findStation({coord, Coord}, #monitor{coord_to_name = CtN, name_to_station = NtS}) ->
     case maps:get(Coord, CtN, undefined) of
         undefined -> {error, not_found};
-        Name -> maps:get(Name, NtS)
+        Name -> {ok, maps:get(Name, NtS)}
     end.
 
+pointEquals({K, T, _}, {K, T, _}) -> true;
+pointEquals(_, _) -> false.

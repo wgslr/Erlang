@@ -26,5 +26,6 @@
     name_to_station = #{} :: #{station_name() => #station{}},
     coord_to_name = #{} :: #{coord() => station_name()}
 }).
+-type monitor() :: #monitor{}.
 
 -endif.

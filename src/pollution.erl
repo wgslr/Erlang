@@ -8,8 +8,6 @@
 
 -export_type([station_name/0]).
 
-
-%% API
 -export([addStation/3, addValue/5, removeValue/4,getOneValue/4, getStationMean/3, getDailyMean/3]).
 
 
@@ -38,33 +36,25 @@ addStation(Name, Coord, M) ->
     #monitor{} | no_return().
 addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
     #station{data = Data} = S = findStation(CoordOrName, M),
-    case exists(MeasureKind, Datetime, Data)of
+    case exists(Datetime, MeasureKind, Data)of
         true -> {error, exists};
-        false -> M#monitor{
-            name_to_station = S#station{
-                data = [{MeasureKind, Datetime, Value} | Data]
-            }}
+        false ->
+            Point = buildPoint(Datetime, MeasureKind, Value),
+            updateStation(S#station{data = [Point | Data]}, M)
     end.
 
-
-% Checks if value exists with the same Kind and Datetime
--spec exists(kind(), timestamp(), [datapoint()]) -> boolean().
-exists(Kind, Datetime, Dataset) ->
-    lists:any(fun({Kind2, Datetime2, _}) ->
-        case {Kind2, Datetime2} of
-            {Kind, Datetime} -> true;
-            _ -> false
-        end
-    end, Dataset).
 
 
 %addValue(CoordOrName, Date, MeasureKind, Monitor) ->
 -spec removeValue(id(), timestamp(), kind(), monitor()) -> monitor().
 removeValue(CoordOrName, Datetime, Kind, M) ->
-    {ok, S} = findStation(CoordOrName),
-    Data = S#station.data,
-    Data2 = lists:filter(fun({Kind2, Datetime2,_} ->
-    )
+    {ok, S} = findStation(CoordOrName, M),
+    Point = buildPoint(Datetime, Kind),
+    Data = lists:filter(fun(P) ->
+        not(spacetimeEquals(Point, P))
+    end, S#station.data),
+    updateStation(S#station{data = Data}, M).
+
 
 % typ, data, stacja
 getOneValue(_Arg0, _Arg1, _Arg2, _Arg3) ->
@@ -86,12 +76,36 @@ findStation({name, Name}, #monitor{name_to_station = NtS}) ->
     case maps:get(Name, NtS, undefined) of
         undefined -> {error, not_found};
         #station{} = S -> {ok, S}
-    end
+    end;
 findStation({coord, Coord}, #monitor{coord_to_name = CtN, name_to_station = NtS}) ->
     case maps:get(Coord, CtN, undefined) of
         undefined -> {error, not_found};
         Name -> {ok, maps:get(Name, NtS)}
     end.
 
-pointEquals({K, T, _}, {K, T, _}) -> true;
-pointEquals(_, _) -> false.
+-spec buildPoint(timestamp(), kind()) -> datapoint().
+buildPoint(Time, Kind) ->
+    {Time, Kind, 0.0}.
+-spec buildPoint(timestamp(), kind(), number()) -> datapoint().
+buildPoint(Time, Kind, Value) ->
+    {Time, Kind, float(Value)}.
+
+-spec updateStation(station(), monitor()) -> monitor().
+updateStation(S, #monitor{name_to_station = NtS} = M) ->
+    M#monitor{
+        name_to_station = NtS#{S#station.name := S}
+    }.
+
+% Checks if value exists with the same Kind and Datetime
+-spec exists(timestamp(), kind(), [datapoint()]) -> boolean().
+exists(Datetime, Kind, Dataset) ->
+    Point = buildPoint(Datetime, Kind),
+    lists:any(fun(P) ->
+        spacetimeEquals(Point, P)
+    end, Dataset).
+
+% Compares datapoints by Kind and Time
+-spec spacetimeEquals(datapoint(), datapoint()) -> boolean().
+spacetimeEquals({T, K, _}, {T, K, _}) -> true;
+spacetimeEquals(_, _) -> false.
+

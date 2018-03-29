@@ -21,6 +21,7 @@
     coord :: coord(),
     data :: [datapoint()]
 }).
+-type station() :: #station{}.
 
 -record(monitor, {
     name_to_station = #{} :: #{station_name() => #station{}},

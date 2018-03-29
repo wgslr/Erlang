@@ -1,0 +1,12 @@
+.idea
+globalregistry.iml
+
+*.iml
+*.sublime*
+*.beam
+*.pyc
+
+.rebar
+rebar3.crashdump
+.eunit
+.dialyzer.plt

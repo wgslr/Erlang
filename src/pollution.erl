@@ -26,10 +26,10 @@ addStation(Name, Coord, M) ->
     case {findStation({name, Name}, M), findStation({coord,Coord}, M)}  of
         {{error, not_found}, {error, not_found}} ->
             Station = #station{coord = Coord, name = Name},
-            M#monitor{
+            {ok, M#monitor{
                 coord_to_name = CtN#{Coord => Name},
                 name_to_station = NtS#{Name => Station}
-            };
+            }};
         _ -> {error, exists}
     end.
 

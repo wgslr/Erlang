@@ -46,7 +46,6 @@ addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
     end.
 
 
-
 -spec removeValue(id(), timestamp(), kind(), monitor()) -> monitor().
 removeValue(CoordOrName, Datetime, Kind, M) ->
     {ok, S} = findStation(CoordOrName, M),
@@ -90,24 +89,31 @@ findStation({name, Name}, #monitor{name_to_station = NtS}) ->
         undefined -> {error, not_found};
         #station{} = S -> {ok, S}
     end;
+
 findStation({coord, Coord}, #monitor{coord_to_name = CtN, name_to_station = NtS}) ->
     case maps:get(Coord, CtN, undefined) of
         undefined -> {error, not_found};
         Name -> {ok, maps:get(Name, NtS)}
     end.
 
+
 -spec buildPoint(timestamp(), kind()) -> datapoint().
 buildPoint(Time, Kind) ->
     {Time, Kind, 0.0}.
+
 -spec buildPoint(timestamp(), kind(), number()) -> datapoint().
 buildPoint(Time, Kind, Value) ->
     {Time, Kind, float(Value)}.
 
+
+%% Updates station data.
+%% Name and coordinate must not change.
 -spec updateStation(station(), monitor()) -> monitor().
 updateStation(S, #monitor{name_to_station = NtS} = M) ->
     M#monitor{
         name_to_station = NtS#{S#station.name := S}
     }.
+
 
 % Checks if value exists with the same Kind and Datetime
 -spec exists(timestamp(), kind(), [datapoint()]) -> boolean().
@@ -116,6 +122,7 @@ exists(Datetime, Kind, Dataset) ->
     lists:any(fun(P) ->
         spacetimeEquals(Point, P)
     end, Dataset).
+
 
 % Compares datapoints by Kind and Time
 -spec spacetimeEquals(datapoint(), datapoint()) -> boolean().

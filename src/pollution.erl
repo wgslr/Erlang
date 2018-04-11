@@ -60,7 +60,7 @@ removeValue(CoordOrName, Datetime, Kind, M) ->
 % typ, data, stacja
 getOneValue(CoordOrName, Time, Kind, M) ->
     Point = buildPoint(Time, Kind),
-    #station{data = Data} = findStation(CoordOrName, M),
+    {ok, #station{data = Data}} = findStation(CoordOrName, M),
     case lists:filter(fun(P) ->
         spacetimeEquals(Point, P) end, Data) of
         [Found] -> Found;

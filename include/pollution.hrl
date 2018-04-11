@@ -7,7 +7,7 @@
 -type coord() :: {float(), float()}.
 -type kind() :: string().
 -type timestamp() :: calendar:datetime().
--type datapoint() :: {kind(), calendar:datetime(), float()}.
+-type datapoint() :: {calendar:datetime(), kind(), float()}.
 
 
 %%-record(datapoint,{

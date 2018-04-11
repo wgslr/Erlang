@@ -12,7 +12,7 @@
     getDailyMean/3]).
 
 
--compile(export_all).
+%%-compile(export_all).
 
 -spec createMonitor() -> monitor().
 createMonitor() ->
@@ -58,19 +58,20 @@ removeValue(CoordOrName, Datetime, Kind, M) ->
 
 
 % typ, data, stacja
+-spec getOneValue(id(), timestamp(), kind(), monitor()) ->
+    datapoint() | {error, not_found}.
 getOneValue(CoordOrName, Time, Kind, M) ->
     Point = buildPoint(Time, Kind),
     {ok, #station{data = Data}} = findStation(CoordOrName, M),
     case lists:filter(fun(P) ->
-        spacetimeEquals(Point, P) end, Data) of
+        spacetimeEquals(Point, P) end, Data
+    ) of
         [Found] -> Found;
         [] -> {error, not_found}
     end.
 
-%
-
 % typ, stacj
-getStationMean(_Arg0, _Arg1, _Arg2) ->
+getStationMean(CoordOrName, Type, M) ->
     erlang:error(not_implemented).
 
 % typ, dzien

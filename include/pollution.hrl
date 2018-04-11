@@ -19,7 +19,7 @@
 -record(station, {
     name :: station_name(),
     coord :: coord(),
-    data :: [datapoint()]
+    data = [] :: [datapoint()]
 }).
 -type station() :: #station{}.
 

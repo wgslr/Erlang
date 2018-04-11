@@ -8,44 +8,45 @@
 
 -export_type([station_name/0]).
 
--export([addStation/3, addValue/5, removeValue/4,getOneValue/4, getStationMean/3, getDailyMean/3]).
+-export([createMonitor/0, addStation/3, addValue/5, removeValue/4,getOneValue/4, getStationMean/3,
+    getDailyMean/3]).
 
 
 -compile(export_all).
 
+-spec createMonitor() -> monitor().
 createMonitor() ->
     #monitor{}.
 
 
--spec addStation(Name :: station_name(), Coord :: coord(), #monitor{}) -> #monitor{}.
+-spec addStation(Name :: station_name(), Coord :: coord(), monitor()) ->
+    {ok, monitor()} | {error, exists}.
 addStation(Name, Coord, M) ->
     #monitor{coord_to_name = CtN, name_to_station = NtS} = M,
     case {findStation({name, Name}, M), findStation({coord,Coord}, M)}  of
         {{error, not_found}, {error, not_found}} ->
+            Station = #station{coord = Coord, name = Name},
             M#monitor{
                 coord_to_name = CtN#{Coord => Name},
-                name_to_station = CtN#{Name => #station{
-                    coord = Coord, name = Name, data = []
-                }}
+                name_to_station = NtS#{Name => Station}
             };
         _ -> {error, exists}
     end.
 
 
--spec addValue(id(), timestamp(), kind(), float(), #monitor{}) ->
-    #monitor{} | no_return().
+-spec addValue(id(), timestamp(), kind(), float(), monitor()) ->
+    {ok, monitor()} | {error, exists}.
 addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
-    #station{data = Data} = S = findStation(CoordOrName, M),
-    case exists(Datetime, MeasureKind, Data)of
+    {ok, #station{data = Data} = S} = findStation(CoordOrName, M),
+    case exists(Datetime, MeasureKind, Data) of
         true -> {error, exists};
         false ->
             Point = buildPoint(Datetime, MeasureKind, Value),
-            updateStation(S#station{data = [Point | Data]}, M)
+            {ok, updateStation(S#station{data = [Point | Data]}, M)}
     end.
 
 
 
-%addValue(CoordOrName, Date, MeasureKind, Monitor) ->
 -spec removeValue(id(), timestamp(), kind(), monitor()) -> monitor().
 removeValue(CoordOrName, Datetime, Kind, M) ->
     {ok, S} = findStation(CoordOrName, M),
@@ -57,8 +58,14 @@ removeValue(CoordOrName, Datetime, Kind, M) ->
 
 
 % typ, data, stacja
-getOneValue(_Arg0, _Arg1, _Arg2, _Arg3) ->
-    erlang:error(not_implemented).
+getOneValue(CoordOrName, Time, Kind, M) ->
+    Point = buildPoint(Time, Kind),
+    #station{data = Data} = findStation(CoordOrName, M),
+    case lists:filter(fun(P) ->
+        spacetimeEquals(Point, P) end, Data) of
+        [Found] -> Found;
+        [] -> {error, not_found}
+    end.
 
 %
 
@@ -71,7 +78,7 @@ getDailyMean(_Arg0, _Arg1, _Arg2) ->
     erlang:error(not_implemented).
 
 
--spec findStation(id(), #monitor{}) -> {ok, #station{}} | {error, not_found}.
+-spec findStation(id(), monitor()) -> {ok, station()} | {error, not_found}.
 findStation({name, Name}, #monitor{name_to_station = NtS}) ->
     case maps:get(Name, NtS, undefined) of
         undefined -> {error, not_found};

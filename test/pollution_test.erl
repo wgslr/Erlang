@@ -108,6 +108,5 @@ getStationMean_test() ->
         ?DATA_TIME2, ?DATA_TYPE2, V3, M4),
     M = M5,
 
-    ?assertEqual(Expected, pollution:getStationMean({coord, ?STATION_NAME1}, ?DATA_TYPE1, M)).
-
+    ?assertEqual(Expected, pollution:getStationMean({coord, ?STATION_COORD1}, ?DATA_TYPE1, M)).
 

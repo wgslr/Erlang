@@ -70,9 +70,14 @@ getOneValue(CoordOrName, Time, Kind, M) ->
         [] -> {error, not_found}
     end.
 
-% typ, stacj
+
+-spec getStationMean(id(), kind(), monitor()) -> float().
 getStationMean(CoordOrName, Type, M) ->
-    erlang:error(not_implemented).
+    {ok, #station{data = Data}} = findStation(CoordOrName, M),
+    FilteredData = lists:filter(fun({_, T, _}) -> T =:= Type end, Data),
+    lists:sum(lists:map(fun({_, _, Value}) -> Value end, FilteredData))
+        / length(FilteredData).
+
 
 % typ, dzien
 getDailyMean(_Arg0, _Arg1, _Arg2) ->

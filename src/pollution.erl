@@ -108,7 +108,7 @@ getAirQualityIndex(CoordOrName, Datetime,M) ->
         end
     end, Data),
     case lists:filtermap(fun({Type, Value}) ->
-        case overdose(Type, Value) of
+        case qualityIndex(Type, Value) of
             undefined -> false;
             Index -> {true, Index}
         end
@@ -193,7 +193,7 @@ getNorm(Type) ->
     end.
 
 
-overdose(Type, Value) ->
+qualityIndex(Type, Value) ->
     case getNorm(Type) of
         undefined -> undefined;
         Norm -> round(Value * 100 / Norm)

@@ -20,17 +20,68 @@
 -define(ANY_DATAPOINT, {_, _, _}).
 
 -define(SETUP(__TEST), {setup, fun setup/0, fun teardown/1, __TEST}).
+%%
+%%basic_test_() -> [
+%%    {"Start registers, stop unregisters",
+%%        ?SETUP(fun start_registers_stop_unregisters/0)},
+%%    {"Default state is empty monitor",
+%%        ?SETUP(fun default_state_is_monitor/0)},
+%%    {"addStation fails on duplicate",
+%%        ?SETUP(fun addStation_fails_on_duplicate/0)}
+%%].
 
-all_test_() -> [
-    {"Start registers, stop unregisters",
-        ?SETUP(fun start_registers_stop_unregisters/0)},
-    {"Default state is empty monitor",
-        ?SETUP(fun default_state_is_monitor/0)},
+all_test_() ->
+    {foreach, fun setup/0, fun teardown/1, lists:flatten([
+        [
+    {"Start registers, stop unregisters2",
+        fun start_registers_stop_unregisters/0},
+    {"Default state is empty monitor2",
+        fun default_state_is_monitor/0}],
     {"addStation fails on duplicate",
-        ?SETUP(fun addStation_fails_on_duplicate/0)}
+        fun addStation_fails_on_duplicate/0}
+%%        addValue_tests()
+])}.
 
 
-].
+addValue_test_() ->
+    Setup = fun() ->
+        setup(),
+        pollution_server:addStation(?STATION_NAME1, ?STATION_COORD1)
+        end,
+    {foreach, Setup, fun teardown/1, [
+        {"Value can be added to station specified by name",
+            ?_assertMatch(ok, pollution_server:addValue(
+                {name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1))},
+
+        {"Value can be added to station specified by coord",
+            ?_assertMatch(ok, pollution_server:addValue(
+                {coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1))}
+
+%%        % Created value can be found
+%%        fun() ->
+%%            NewM = pollution_server:addValue(
+%%                {name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M),
+%%            ?assertEqual(?DATAPOINT1,
+%%                pollution_server:getOneValue({name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, NewM)
+%%            )
+%%        end,
+%%
+%%        %% Fail on duplicate
+%%        {"addValue_fail_on_duplicate", fun() ->
+%%            NewM = pollution_server:addValue(
+%%                {name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M),
+%%            ?assertEqual({error, exists},
+%%                pollution_server:addValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, NewM))
+%%        end},
+%%
+%%        %% Fail on duplicate
+%%        {"addValue_fail_on_missing_station", fun() ->
+%%            ?assertError(_,
+%%                pollution_server:addValue({coord, ?STATION_COORD2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M)),
+%%            ?assertError(_,
+%%                pollution_server:addValue({name, ?STATION_NAME2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M))
+%%        end}
+    ]}.
 
 setup() ->
     pollution_server:start(),

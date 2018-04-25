@@ -9,9 +9,8 @@
 %% API
 -export([start/0, stop/0]).
 -export([addStation/2, addValue/4, getOneValue/3, removeValue/3]).
-
+-export([getStationMean/2, getDailyMean/2, getAirQualityIndex/2]).
 -export([get_state/0]).
--export([call/1, call/2]).
 
 %%%===================================================================
 %%% Public API
@@ -55,6 +54,23 @@ getOneValue(CoordOrName, Time, Kind) ->
 -spec removeValue(id(), timestamp(), kind()) -> ok | {error, Reason :: term()}.
 removeValue(CoordOrName, Datetime, Kind) ->
     call({remove_value, CoordOrName, Datetime, Kind}).
+
+
+-spec getStationMean(id(), kind()) ->
+    float() | undefined | {error, bad_station}.
+getStationMean(CoordOrName, Type) ->
+    call({get_station_mean, CoordOrName, Type}).
+
+
+-spec getDailyMean(calendar:date(), kind()) -> float() | undefined.
+getDailyMean(Date, Type) ->
+    call({get_daily_mean, Date, Type}).
+
+
+-spec getAirQualityIndex(CoordOrName :: id(), Datetime :: timestamp()) ->
+    integer() | {error, no_data} | {error, bad_station}.
+getAirQualityIndex(CoordOrName, Datetime) ->
+    call({get_aqi, CoordOrName, Datetime}).
 
 
 -spec get_state() -> state().
@@ -119,14 +135,23 @@ handle({add_value, CoordOrName, Datetime, MeasureKind, Value}, State) ->
         {error, _} = Error -> {Error, State}
     end;
 
-handle({get_value, CoordOrName, Time, Kind}, State) ->
-    {pollution:getOneValue(CoordOrName, Time, Kind, State), State};
-
 handle({remove_value, CoordOrName, Datetime, Kind}, State) ->
     case pollution:removeValue(CoordOrName, Datetime, Kind, State) of
         #monitor{} = M -> {ok, M};
         Error -> {Error, State}
     end;
+
+handle({get_value, CoordOrName, Time, Kind}, State) ->
+    {pollution:getOneValue(CoordOrName, Time, Kind, State), State};
+
+handle({get_station_mean, CoordOrName, Kind}, State) ->
+    {pollution:getStationMean(CoordOrName, Kind, State), State};
+
+handle({get_daily_mean, Date, Kind}, State) ->
+    {pollution:getDailyMean(Date, Kind, State), State};
+
+handle({get_aqi, CoordOrName, Datetime}, State) ->
+    {pollution:getAirQualityIndex(CoordOrName, Datetime, State), State};
 
 handle(_Request, State) ->
     {{error, bad_request}, State}.

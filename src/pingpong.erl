@@ -4,14 +4,6 @@
 %% API
 -export([start/0, stop/0, play/1]).
 
--record(state,{
-    name :: atom(),
-    opponent :: atom(),
-    msg_left :: non_neg_integer()
-}).
-
-
-
 start() ->
     register(ping, spawn(fun() -> player(pong) end)),
     register(pong, spawn(fun() -> player(ping) end)).

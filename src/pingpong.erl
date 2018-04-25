@@ -13,34 +13,63 @@
 
 
 start() ->
-    register(ping, spawn(fun() ->
-        player(#state{name = ping, opponent = pong, msg_left = inf}) end)),
-    register(pong, spawn(fun() ->
-            player(#state{name = pong, opponent = ping, msg_left = inf}) end)).
+    register(ping, spawn(fun() -> player(pong) end)),
+    register(pong, spawn(fun() -> player(ping) end)).
 
 stop() ->
-    erlang:error(not_implemented).
+    ping ! pong ! stop.
 
 play(N) ->
-    ping ! N,
-    pong ! N.
+    ping ! N.
 
-player(#state{msg_left = 0}) ->
-    timer:sleep(timer:seconds(20));
-player(#state{name = Name, msg_left = MsgLeft} = State) ->
+
+player(Other) ->
     receive
-        ball ->
-            io:format("~s received ball~n", [Name]),
+        stop ->
+            io:format("~p stopping~n", [self()]),
+            ok;
+        Left when is_integer(Left) ->
+            io:format("~p received ~p~n", [self(), Left]),
             timer:sleep(200),
-            io:format("~s throwing ball~n", [Name]),
 
-            State#state.opponent ! ball,
-            player(State#state{msg_left = MsgLeft - 1});
-        N ->
-            io:format("~s awaken~n", [Name]),
-            State#state.opponent ! ball,
-            player(State#state{msg_left = N})
+            case Left > 0 of
+                true ->
+                    io:format("~p throwing to ~s, ~b left~n", [self(), Other, Left - 1]),
+                    Other ! Left - 1,
+                    player(Other);
+                false ->
+                    io:format("~p waiting for game~n", [self()]),
+                    player(Other)
+            end;
+        Msg -> io:format("Unexpected message in ~p: ~p~n", [self(), Msg])
     after
-        20000 ->
-            io:format("Exiting after 20 seconds~n")
+        20000 -> io:format("Exiting after 20 seconds~n")
     end.
+
+
+%%player(#state{msg_left = N, name = Name} = State) when N =< 0 ->
+%%    receive
+%%        N when is_integer(N) ->
+%%            io:format("~s awaken~n", [Name]),
+%%            State#state.opponent ! {ball, N},
+%%            player(State#state{msg_left = N})
+%%    after
+%%        20000 ->
+%%            io:format("Exiting after 20 seconds~n")
+%%    end.
+%%player(#state{name = Name, msg_left = MsgLeft} = State) ->
+%%    receive
+%%        {ball, Num} ->
+%%            io:format("~s received ball~n", [Name]),
+%%            timer:sleep(200),
+%%            io:format("~s throwing ball~n", [Name]),
+%%            State#state.opponent ! ball,
+%%            player(State#state{msg_left = MsgLeft - 1});
+%%        N ->
+%%            io:format("~s awaken~n", [Name]),
+%%            State#state.opponent ! ball,
+%%            player(State#state{msg_left = N})
+%%    after
+%%        20000 ->
+%%            io:format("Exiting after 20 seconds~n")
+%%    end.

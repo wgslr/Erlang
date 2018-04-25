@@ -184,13 +184,10 @@ mean(List) -> lists:sum(List) / length(List).
 
 
 -spec getNorm(kind()) -> float() | undefined.
-getNorm(Type) ->
-    case Type of
-        "PM10" -> 50.0;
-        "PM2.5" -> 30.0;
-        "PM2,5" -> 30.0;
-        _ -> undefined
-    end.
+getNorm("PM10") -> 50.0;
+getNorm("PM2.5") -> 30.0;
+getNorm("PM2,5") -> getNorm("PM2.5");
+getNorm(_) -> undefined.
 
 
 qualityIndex(Type, Value) ->

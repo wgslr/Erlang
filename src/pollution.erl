@@ -8,9 +8,8 @@
 
 -export_type([station_name/0]).
 
--export([createMonitor/0, addStation/3, addValue/5, removeValue/4,getOneValue/4,
+-export([createMonitor/0, addStation/3, addValue/5, removeValue/4, getOneValue/4,
     getStationMean/3, getDailyMean/3, getAirQualityIndex/3]).
-
 
 
 %%%===================================================================
@@ -38,50 +37,64 @@ addStation(Name, Coord, M) ->
 
 
 -spec addValue(id(), timestamp(), kind(), float(), monitor()) ->
-    monitor() | {error, exists}.
+    monitor() | {error, exists} | {error, bad_station}.
 addValue(CoordOrName, Datetime, MeasureKind, Value, M) ->
-    {ok, #station{data = Data} = S} = findStation(CoordOrName, M),
-    case exists(Datetime, MeasureKind, Data) of
-        true -> {error, exists};
-        false ->
-            Point = buildPoint(Datetime, MeasureKind, Value),
-            updateStation(S#station{data = [Point | Data]}, M)
+    case findStation(CoordOrName, M) of
+        {ok, #station{data = Data} = S} ->
+            case exists(Datetime, MeasureKind, Data) of
+                true -> {error, exists};
+                false ->
+                    Point = buildPoint(Datetime, MeasureKind, Value),
+                    updateStation(S#station{data = [Point | Data]}, M)
+            end;
+        _ -> {error, bad_station}
     end.
 
 
--spec removeValue(id(), timestamp(), kind(), monitor()) -> monitor().
+-spec removeValue(id(), timestamp(), kind(), monitor()) ->
+    monitor() | {error, bad_station}.
 removeValue(CoordOrName, Datetime, Kind, M) ->
-    {ok, S} = findStation(CoordOrName, M),
-    Point = buildPoint(Datetime, Kind),
-    Data = lists:filter(fun(P) ->
-        not(spacetimeEquals(Point, P))
-    end, S#station.data),
-    updateStation(S#station{data = Data}, M).
+    case findStation(CoordOrName, M) of
+        {ok, S} ->
+            Point = buildPoint(Datetime, Kind),
+            Data = lists:filter(fun(P) ->
+                not(spacetimeEquals(Point, P))
+            end, S#station.data),
+            updateStation(S#station{data = Data}, M);
+        _ -> {error, bad_station}
+    end.
 
 
 -spec getOneValue(id(), timestamp(), kind(), monitor()) ->
-    datapoint() | {error, not_found}.
+    datapoint() | {error, not_found} | {error, bad_station}.
 getOneValue(CoordOrName, Time, Kind, M) ->
     Point = buildPoint(Time, Kind),
-    {ok, #station{data = Data}} = findStation(CoordOrName, M),
-    case lists:filter(fun(P) ->
-        spacetimeEquals(Point, P) end, Data
-    ) of
-        [Found] -> Found;
-        [] -> {error, not_found}
+    case findStation(CoordOrName, M) of
+        {ok, #station{data = Data}} ->
+            case lists:filter(fun(P) ->
+                spacetimeEquals(Point, P) end, Data
+            ) of
+                [Found] -> Found;
+                [] -> {error, not_found}
+            end;
+        _ -> {error, bad_station}
     end.
 
 
--spec getStationMean(id(), kind(), monitor()) -> float() | undefined.
+-spec getStationMean(id(), kind(), monitor()) ->
+    float() | undefined | {error, bad_station}.
 getStationMean(CoordOrName, Type, M) ->
-    {ok, #station{data = Data}} = findStation(CoordOrName, M),
-    Values = lists:filtermap(fun({_, T, V}) ->
-        case T =:= Type of
-            true -> {true, V};
-            _ -> false
-        end
-    end, Data),
-    mean(Values).
+    case findStation(CoordOrName, M) of
+        {ok, #station{data = Data}} ->
+            Values = lists:filtermap(fun({_, T, V}) ->
+                case T =:= Type of
+                    true -> {true, V};
+                    _ -> false
+                end
+            end, Data),
+            mean(Values);
+        _ -> {error, bad_station}
+    end.
 
 
 -spec getDailyMean(calendar:date(), kind(), monitor()) -> float() | undefined.
@@ -96,24 +109,28 @@ getDailyMean(Date, Type, #monitor{name_to_station = NtS}) ->
     end, maps:to_list(NtS)),
     mean(Values).
 
+
 -spec getAirQualityIndex(CoordOrName :: id(), Datetime :: timestamp(),
-    M :: monitor()) -> integer() | {error, no_data}.
-getAirQualityIndex(CoordOrName, Datetime,M) ->
-    {ok, #station{data = Data}} = findStation(CoordOrName, M),
-    Relevant = lists:filtermap(fun({D,T,V}) ->
-        case D =:= Datetime of
-            true -> {true, {T, V}};
-            false -> false
-        end
-    end, Data),
-    case lists:filtermap(fun({Type, Value}) ->
-        case qualityIndex(Type, Value) of
-            undefined -> false;
-            Index -> {true, Index}
-        end
-    end, Relevant) of
-        [] -> {error, no_data};
-        Values -> lists:max(Values)
+    M :: monitor()) -> integer() | {error, no_data} | {error, bad_station}.
+getAirQualityIndex(CoordOrName, Datetime, M) ->
+    case findStation(CoordOrName, M) of
+        {ok, #station{data = Data}} ->
+            Relevant = lists:filtermap(fun({D, T, V}) ->
+                case D =:= Datetime of
+                    true -> {true, {T, V}};
+                    false -> false
+                end
+            end, Data),
+            case lists:filtermap(fun({Type, Value}) ->
+                case qualityIndex(Type, Value) of
+                    undefined -> false;
+                    Index -> {true, Index}
+                end
+            end, Relevant) of
+                [] -> {error, no_data};
+                Values -> lists:max(Values)
+            end;
+        _ -> {error, bad_station}
     end.
 
 %%%===================================================================
@@ -124,7 +141,7 @@ getAirQualityIndex(CoordOrName, Datetime,M) ->
 -spec isStationAvailable(Name :: station_name(), Coord :: coord(), monitor()) ->
     boolean().
 isStationAvailable(Name, Coord, M) ->
-    case {findStation({name, Name}, M), findStation({coord,Coord}, M)}  of
+    case {findStation({name, Name}, M), findStation({coord, Coord}, M)} of
         {{error, not_found}, {error, not_found}} -> true;
         _ -> false
     end.

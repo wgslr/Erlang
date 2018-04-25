@@ -20,27 +20,27 @@
 -define(ANY_DATAPOINT, {_, _, _}).
 
 -define(SETUP(__TEST), {setup, fun setup/0, fun teardown/1, __TEST}).
-%%
-%%basic_test_() -> [
-%%    {"Start registers, stop unregisters",
-%%        ?SETUP(fun start_registers_stop_unregisters/0)},
-%%    {"Default state is empty monitor",
-%%        ?SETUP(fun default_state_is_monitor/0)},
-%%    {"addStation fails on duplicate",
-%%        ?SETUP(fun addStation_fails_on_duplicate/0)}
-%%].
 
-all_test_() ->
-    {foreach, fun setup/0, fun teardown/1, lists:flatten([
-        [
-            {"Start registers, stop unregisters2",
-                fun start_registers_stop_unregisters/0},
-            {"Default state is empty monitor2",
-                fun default_state_is_monitor/0}],
+setup() ->
+    pollution_server:start(),
+    ok.
+
+
+teardown(_) ->
+    pollution_server:stop().
+
+
+main_test_() -> [
+    {"Start registers, stop unregisters2",
+        fun start_registers_stop_unregisters/0},
+    {foreach, fun setup/0, fun teardown/1, [
+        {"Default state is empty monitor2",
+            fun default_state_is_monitor/0},
         {"addStation fails on duplicate",
-            fun addStation_fails_on_duplicate/0}
-%%        addValue_tests()
-    ])}.
+            fun addStation_fails_on_duplicate/0},
+        {"Removed value cannot be retrieved",
+            fun removeValue/0}
+    ]}].
 
 
 addValue_test_() ->
@@ -71,27 +71,36 @@ addValue_test_() ->
             NewM = pollution_server:addValue(
                 {name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1),
             ?assertEqual({error, exists},
-                pollution_server:addValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1))
+                pollution_server:addValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1,
+                    ?DATA_VALUE1))
         end},
 
         %% Fail on duplicate
         {"addValue fails on missing station", fun() ->
             ?assertMatch({error, bad_station},
-                pollution_server:addValue({coord, ?STATION_COORD2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1)),
+                pollution_server:addValue({coord, ?STATION_COORD2}, ?DATA_TIME1, ?DATA_TYPE1,
+                    ?DATA_VALUE1)),
             ?assertMatch({error, bad_station},
-                pollution_server:addValue({name, ?STATION_NAME2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1))
+                pollution_server:addValue({name, ?STATION_NAME2}, ?DATA_TIME1, ?DATA_TYPE1,
+                    ?DATA_VALUE1))
         end}
     ]}.
 
-setup() ->
-    pollution_server:start(),
-    ok.
+removeValue() ->
+    % setup
+    pollution_server:addStation(?STATION_NAME1, ?STATION_COORD1),
+    pollution_server:addValue({coord, ?STATION_COORD1},
+        ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1),
 
-teardown(_) ->
-    pollution_server:stop().
+    ?assertMatch(?ANY_DATAPOINT, pollution_server:getOneValue({coord, ?STATION_COORD1}, ?DATA_TIME1,
+        ?DATA_TYPE1)),
+    pollution_server:removeValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1),
+    ?assertMatch({error, not_found},
+        pollution_server:getOneValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1)).
+
 
 start_registers_stop_unregisters() ->
-%%    pollution_server:start(),
+    pollution_server:start(),
     ?assert(lists:member(pollution_server, registered())),
     pollution_server:stop(),
     ?assertNot(lists:member(pollution_server, registered())).

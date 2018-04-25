@@ -70,9 +70,9 @@ addValue_test_() ->
         end},
 
         {"addValue_fail_on_missing_station", fun() ->
-            ?assertError(_,
+            ?assertMatch({error, bad_station},
                 pollution:addValue({coord, ?STATION_COORD2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M)),
-            ?assertError(_,
+            ?assertMatch({error, bad_station},
                 pollution:addValue({name, ?STATION_NAME2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M))
         end}
     ].

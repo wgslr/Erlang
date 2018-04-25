@@ -40,7 +40,6 @@ addStation(Name, Coord) ->
     call({add_station, Name, Coord}).
 
 
-
 -spec get_state() -> state().
 get_state() ->
     call(get_state).

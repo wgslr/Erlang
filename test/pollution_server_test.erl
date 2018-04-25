@@ -19,8 +19,18 @@
 -define(DATAPOINT1, {?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1}).
 -define(ANY_DATAPOINT, {_, _, _}).
 
-all_test_() ->
-   {foreach, fun setup/0, fun teardown/1, {module, ?MODULE}}.
+-define(SETUP(__TEST), {setup, fun setup/0, fun teardown/1, __TEST}).
+
+all_test_() -> [
+    {"Start registers, stop unregisters",
+        ?SETUP(fun start_registers_stop_unregisters/0)},
+    {"Default state is empty monitor",
+        ?SETUP(fun default_state_is_monitor/0)},
+    {"addStation fails on duplicate",
+        ?SETUP(fun addStation_fails_on_duplicate/0)}
+
+
+].
 
 setup() ->
     pollution_server:start(),
@@ -29,23 +39,18 @@ setup() ->
 teardown(_) ->
     pollution_server:stop().
 
-start_registers_stop_unregsiters_test() ->
+start_registers_stop_unregisters() ->
 %%    pollution_server:start(),
     ?assert(lists:member(pollution_server, registered())),
     pollution_server:stop(),
     ?assertNot(lists:member(pollution_server, registered())).
 
 
-default_state_is_monitor_test() ->
-%%    pollution_server:start(),
-    ?assertEqual(#monitor{}, pollution_server:get_state()),
-    pollution_server:stop().
+default_state_is_monitor() ->
+    ?assertEqual(#monitor{}, pollution_server:get_state()).
 
 
-addStation_fails_on_duplicate_test() ->
-    % Setup
-
-%%    pollution_server:start(),
+addStation_fails_on_duplicate() ->
     pollution_server:addStation(?STATION_NAME1, ?STATION_COORD1),
 
     % Test

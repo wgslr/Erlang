@@ -62,7 +62,6 @@ addValue_test_() ->
             )
         end,
 
-        %% Fail on duplicate
         {"addValue_fail_on_duplicate", fun() ->
             NewM = pollution:addValue(
                 {name, ?STATION_NAME1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M),
@@ -70,7 +69,6 @@ addValue_test_() ->
                 pollution:addValue({coord, ?STATION_COORD1}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, NewM))
         end},
 
-        %% Fail on duplicate
         {"addValue_fail_on_missing_station", fun() ->
             ?assertError(_,
                 pollution:addValue({coord, ?STATION_COORD2}, ?DATA_TIME1, ?DATA_TYPE1, ?DATA_VALUE1, M)),

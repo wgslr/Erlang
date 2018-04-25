@@ -59,7 +59,6 @@ removeValue(CoordOrName, Datetime, Kind, M) ->
     updateStation(S#station{data = Data}, M).
 
 
-% typ, data, stacja
 -spec getOneValue(id(), timestamp(), kind(), monitor()) ->
     datapoint() | {error, not_found}.
 getOneValue(CoordOrName, Time, Kind, M) ->

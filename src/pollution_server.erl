@@ -7,9 +7,10 @@
 -type state() :: monitor().
 
 %% API
--export([start/0, stop/0]).
+-export([start/0, start_link/0, stop/0]).
 -export([addStation/2, addValue/4, getOneValue/3, removeValue/3]).
 -export([getStationMean/2, getDailyMean/2, getAirQualityIndex/2]).
+-export([crash/0]).
 -export([get_state/0]).
 
 %%%===================================================================
@@ -22,9 +23,14 @@ start() ->
     ok.
 
 
+-spec start_link() -> ok.
+start_link() ->
+    register(?MODULE, spawn_link(fun init/0)),
+    ok.
+
+
 -spec stop() -> state().
 stop() ->
-    io:format("Sending stop~n", []),
     ?MODULE ! {stop, self()},
     receive
         {stopped, State} -> State
@@ -73,6 +79,11 @@ getAirQualityIndex(CoordOrName, Datetime) ->
     call({get_aqi, CoordOrName, Datetime}).
 
 
+-spec crash() -> no_return().
+crash() ->
+    call(crash).
+
+
 -spec get_state() -> state().
 get_state() ->
     call(get_state).
@@ -104,18 +115,15 @@ init() ->
 
 -spec loop(state()) -> state().
 loop(State) ->
-    io:format("State: ~p", [State]),
     receive
         {stop, From} ->
             From ! {stopped, State},
             State;
         {Request, From} ->
-            io:format("Request ~p at ~p~n", [{Request, From}, State]),
             {Response, NewState} = handle(Request, State),
             From ! Response,
             loop(NewState);
         Malformed ->
-            io:format("~s received malformed request: ~p", [?MODULE, Malformed]),
             loop(State)
     end.
 
@@ -152,6 +160,9 @@ handle({get_daily_mean, Date, Kind}, State) ->
 
 handle({get_aqi, CoordOrName, Datetime}, State) ->
     {pollution:getAirQualityIndex(CoordOrName, Datetime, State), State};
+
+handle(crash, State) ->
+    {inf/banana, State};
 
 handle(_Request, State) ->
     {{error, bad_request}, State}.

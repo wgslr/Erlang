@@ -5,6 +5,7 @@
 
 -type station_name() :: string().
 -type coord() :: {float(), float()}.
+
 -type kind() :: string().
 -type timestamp() :: calendar:datetime().
 -type datapoint() :: {calendar:datetime(), kind(), float()}.

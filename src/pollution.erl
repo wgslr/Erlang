@@ -93,7 +93,7 @@ getStationMean(CoordOrName, Type, M) ->
                 end
             end, Data),
             mean(Values);
-        _ -> {error, bad_station}
+        {error, not_found} -> {error, bad_station}
     end.
 
 

@@ -88,41 +88,41 @@ get_state() ->
 init([]) ->
     {ok, #monitor{}}.
 
-handle_call(get_state, From, State) ->
+handle_call(get_state, _From, State) ->
     {reply, State, State};
 
-handle_call({add_station, Name, Coord}, From, State) ->
+handle_call({add_station, Name, Coord}, _From, State) ->
     case pollution:addStation(Name, Coord, State) of
         #monitor{} = M -> {reply, ok, M};
         {error, _} = Error -> {reply, Error, State}
     end;
 
-handle_call({add_value, CoordOrName, Datetime, MeasureKind, Value}, From, State) ->
+handle_call({add_value, CoordOrName, Datetime, MeasureKind, Value}, _From, State) ->
     case pollution:addValue(CoordOrName, Datetime, MeasureKind, Value, State) of
         #monitor{} = M -> {reply, ok, M};
         {error, _} = Error -> {reply, Error, State}
     end;
 
-handle_call({remove_value, CoordOrName, Datetime, Kind}, From, State) ->
+handle_call({remove_value, CoordOrName, Datetime, Kind}, _From, State) ->
     case pollution:removeValue(CoordOrName, Datetime, Kind, State) of
         #monitor{} = M -> {reply, ok, M};
         Error -> {reply, Error, State}
     end;
 
-handle_call({get_value, CoordOrName, Time, Kind}, From, State) ->
+handle_call({get_value, CoordOrName, Time, Kind}, _From, State) ->
     {reply, pollution:getOneValue(CoordOrName, Time, Kind, State), State};
 
-handle_call({get_station_mean, CoordOrName, Kind}, From, State) ->
+handle_call({get_station_mean, CoordOrName, Kind}, _From, State) ->
     {reply, pollution:getStationMean(CoordOrName, Kind, State), State};
 
-handle_call({get_daily_mean, Date, Kind}, From, State) ->
+handle_call({get_daily_mean, Date, Kind}, _From, State) ->
     {reply, pollution:getDailyMean(Date, Kind, State), State};
 
-handle_call({get_aqi, CoordOrName, Datetime}, From, State) ->
+handle_call({get_aqi, CoordOrName, Datetime}, _From, State) ->
     {reply, pollution:getAirQualityIndex(CoordOrName, Datetime, State), State};
 
-handle_call(_Request, From, State) ->
-    io:format("~s receied unexpected call: ~p~n", [?MODULE, _Request]),
+handle_call(_Request, _From, State) ->
+    io:format("~s received unexpected call: ~p~n", [?MODULE, _Request]),
     {reply, {error, bad_request}, State}.
 
 
@@ -131,10 +131,10 @@ handle_cast(crash, State) ->
     {noreply, State};
 
 handle_cast(Request, State) ->
-    io:format("~s receied unexpected cast: ~p~n", [?MODULE, Request]),
+    io:format("~s received unexpected cast: ~p~n", [?MODULE, Request]),
     {noreply, State}.
 
 
 handle_info(Request, State) ->
-    io:format("~s receied unexpected info: ~p~n", [?MODULE, Request]),
+    io:format("~s received unexpected info: ~p~n", [?MODULE, Request]),
     {noreply, State}.

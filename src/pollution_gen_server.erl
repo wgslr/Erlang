@@ -11,8 +11,11 @@
 % gen_Server callbacks
 -export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
+-define(ETS_BACKUP, pollution_state).
+-define(KEY, key).
+
 %% API
--export([start_link/0, stop/0]).
+-export([init_ets/0, start_link/0, stop/0]).
 -export([addStation/2, addValue/4, getOneValue/3, removeValue/3]).
 -export([getStationMean/2, getDailyMean/2, getAirQualityIndex/2]).
 -export([crash/0]).
@@ -21,6 +24,10 @@
 %%%===================================================================
 %%% Public API
 %%%===================================================================
+
+init_ets() ->
+    ets:new(?ETS_BACKUP, [named_table, public, set]),
+    ets:insert(?ETS_BACKUP, {?KEY, #monitor{}}).
 
 -spec start_link() -> ok.
 start_link() ->
@@ -86,11 +93,13 @@ get_state() ->
 %%%===================================================================
 
 init([]) ->
-    io:format("~s starting~n", [?MODULE]),
-    {ok, #monitor{}}.
+    [{?KEY, State}] = ets:lookup(?ETS_BACKUP, ?KEY),
+    io:format("~s starting.State: ~p~n", [?MODULE, State]),
+    {ok, State}.
 
 terminate(Reason, State) ->
-    io:format("Terminating because of ~p with State ~p~n", [Reason, State]).
+    io:format("Terminating because of ~p with State ~p~n", [Reason, State]),
+    ets:insert(?ETS_BACKUP, {?KEY, State}).
 
 handle_call(get_state, _From, State) ->
     {reply, State, State};

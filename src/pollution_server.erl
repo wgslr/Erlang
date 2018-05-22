@@ -6,6 +6,9 @@
 -type id() :: {name, station_name()} | {coord, coord()}.
 -type state() :: monitor().
 
+-define(ETS_BACKUP, pollution_state).
+-define(KEY, key).
+
 %% API
 -export([start/0, start_link/0, stop/0]).
 -export([addStation/2, addValue/4, getOneValue/3, removeValue/3]).

@@ -206,7 +206,7 @@ getNorm("PM2,5") -> getNorm("PM2.5");
 getNorm(_) -> undefined.
 
 
--spec qualityIndex(kind(), float()) -> float() | undefined
+-spec qualityIndex(kind(), float()) -> float() | undefined.
 qualityIndex(Type, Value) ->
     case getNorm(Type) of
         undefined -> undefined;

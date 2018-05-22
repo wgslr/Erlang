@@ -9,7 +9,7 @@
 -type state() :: monitor().
 
 % gen_Server callbacks
--export([init/1, handle_call/3, handle_cast/2, handle_info/2]).
+-export([init/1, terminate/2, handle_call/3, handle_cast/2, handle_info/2]).
 
 %% API
 -export([start_link/0, stop/0]).
@@ -86,7 +86,11 @@ get_state() ->
 %%%===================================================================
 
 init([]) ->
+    io:format("~s starting~n", [?MODULE]),
     {ok, #monitor{}}.
+
+terminate(Reason, State) ->
+    io:format("Terminating because of ~p with State ~p~n", [Reason, State]).
 
 handle_call(get_state, _From, State) ->
     {reply, State, State};
